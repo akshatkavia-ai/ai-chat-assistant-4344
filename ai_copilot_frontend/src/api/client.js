@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Resolve base URL from environment variable
-// If not set, default to localhost for local development
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+// Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
+const BASE_URL = process.env.REACT_APP_API_BASE_URL 
+  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
+  || 'http://localhost:3001';
 
 // Log the resolved base URL for diagnostics
 console.info('[API] Base URL:', BASE_URL);
@@ -15,8 +16,7 @@ export const api = axios.create({
   headers: { 
     'Content-Type': 'application/json' 
   },
-  timeout: 30000, // 30 second timeout
-  withCredentials: false // Set to true only if using cookies/sessions
+  timeout: 30000 // 30 second timeout
 });
 
 /**
@@ -43,13 +43,8 @@ export async function sendMessage(message) {
     } else if (error.request) {
       // Request made but no response received (network/CORS issue)
       const url = error.config?.url || '/api/chat';
-      console.error(`[API] Network/CORS error - no response from ${BASE_URL}${url}`);
-      console.error('[API] Possible causes:');
-      console.error('  1. Backend is not running');
-      console.error('  2. CORS is not configured correctly');
-      console.error('  3. Wrong backend URL in .env file');
-      console.error('  4. Network/firewall blocking the request');
-      throw new Error(`Cannot connect to backend at ${BASE_URL}. Check console for details.`);
+      console.error(`[API] Network error - no response from ${BASE_URL}${url}`);
+      throw new Error(`Cannot connect to backend at ${BASE_URL}. Check network, CORS, or if server is running.`);
     } else {
       // Something else happened
       console.error('[API] Unexpected error:', error.message);
