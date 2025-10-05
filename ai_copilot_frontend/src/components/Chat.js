@@ -16,7 +16,9 @@ export const Chat = () => {
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (endRef.current && typeof endRef.current.scrollIntoView === 'function') {
+      endRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
