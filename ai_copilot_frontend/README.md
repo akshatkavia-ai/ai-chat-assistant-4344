@@ -1,82 +1,90 @@
-# Lightweight React Template for KAVIA
+# AI Copilot Frontend (React)
 
-This project provides a minimal React template with a clean, modern UI and minimal dependencies.
+Modern React-based frontend for the AI Copilot chat application with Ocean Professional theme styling.
 
 ## Features
 
-- **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React
-- **Modern UI**: Clean, responsive design with KAVIA brand styling
-- **Fast**: Minimal dependencies for quick loading times
-- **Simple**: Easy to understand and modify
+- Real-time chat interface with AI assistant
+- Axios-based API communication
+- Ocean Professional theme with modern styling
+- Responsive design with smooth animations
+- Error handling and loading states
+- Auto-scroll to latest messages
 
-## Getting Started
+## Environment Variables
 
-In the project directory, you can run:
+Create a `.env` file in the frontend root directory:
 
-### `npm start`
-
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-### `npm test`
-
-Launches the test runner in interactive watch mode.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-## Customization
-
-### Colors
-
-The main brand colors are defined as CSS variables in `src/App.css`:
-
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
+```env
+REACT_APP_API_BASE_URL=http://localhost:3001
 ```
 
-### Components
+This configures the backend API endpoint. The default is `http://localhost:3001` if not specified.
 
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
+## Setup
 
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
+1. Install dependencies:
+```bash
+npm install
+```
 
-## Learn More
+2. Create a `.env` file based on `.env.example`:
+```bash
+cp .env.example .env
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+3. Update the `.env` file if your backend runs on a different URL
 
-### Code Splitting
+## Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The application is auto-started by the preview environment on port 3000.
 
-### Analyzing the Bundle Size
+To run manually:
+```bash
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The app will open at http://localhost:3000
 
-### Making a Progressive Web App
+## Building for Production
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+npm run build
+```
 
-### Advanced Configuration
+This creates an optimized production build in the `build/` folder.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Project Structure
 
-### Deployment
+```
+src/
+├── api/
+│   └── client.js       # Axios client and API functions
+├── components/
+│   └── Chat.js         # Main chat component
+├── theme.js            # Ocean Professional theme configuration
+├── App.js              # Main app component
+└── index.js            # App entry point
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Theme
 
-### `npm run build` fails to minify
+The application uses the **Ocean Professional** theme with:
+- Primary color: Blue (#2563EB)
+- Secondary color: Amber (#F59E0B)
+- Modern aesthetic with rounded corners and subtle shadows
+- Smooth transitions and gradients
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## API Integration
+
+The frontend communicates with the FastAPI backend using Axios:
+- `POST /api/chat` - Send messages and receive AI responses
+- `GET /api/health` - Check backend health status
+
+## Browser Support
+
+Supports all modern browsers:
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
