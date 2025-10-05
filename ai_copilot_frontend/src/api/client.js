@@ -1,13 +1,18 @@
 import axios from 'axios';
 
-// Get base URL from environment variable or use default
-const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+// Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
+const BASE_URL = process.env.REACT_APP_API_BASE_URL 
+  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
+  || 'http://localhost:3001';
+
+// Log the resolved base URL for diagnostics
+console.info('[API] Base URL:', BASE_URL);
 
 /**
  * Axios instance configured for backend API communication
  */
 export const api = axios.create({
-  baseURL,
+  baseURL: BASE_URL,
   headers: { 
     'Content-Type': 'application/json' 
   },
@@ -27,13 +32,23 @@ export async function sendMessage(message) {
     const { data } = await api.post('/api/chat', { message });
     return data.reply;
   } catch (error) {
-    // Re-throw with more context
+    // Enhanced error handling with detailed diagnostics
     if (error.response) {
-      throw new Error(error.response.data?.detail || 'Failed to get response from AI');
+      // Server responded with error status
+      const status = error.response.status;
+      const url = error.config?.url || '/api/chat';
+      const detail = error.response.data?.detail || 'Server error';
+      console.error(`[API] Server error ${status} at ${BASE_URL}${url}:`, detail);
+      throw new Error(`Server error (${status}): ${detail}`);
     } else if (error.request) {
-      throw new Error('Cannot connect to backend server. Please ensure it is running.');
+      // Request made but no response received (network/CORS issue)
+      const url = error.config?.url || '/api/chat';
+      console.error(`[API] Network error - no response from ${BASE_URL}${url}`);
+      throw new Error(`Cannot connect to backend at ${BASE_URL}. Check network, CORS, or if server is running.`);
     } else {
-      throw new Error('An unexpected error occurred');
+      // Something else happened
+      console.error('[API] Unexpected error:', error.message);
+      throw new Error(`Unexpected error: ${error.message}`);
     }
   }
 }
@@ -45,6 +60,12 @@ export async function sendMessage(message) {
  * @returns {Promise<object>} Health status object
  */
 export async function checkHealth() {
-  const { data } = await api.get('/api/health');
-  return data;
+  try {
+    const { data } = await api.get('/api/health');
+    console.info('[API] Health check succeeded:', data);
+    return data;
+  } catch (error) {
+    console.error('[API] Health check failed:', error.message);
+    throw error;
+  }
 }

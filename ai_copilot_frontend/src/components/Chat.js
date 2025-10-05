@@ -39,7 +39,10 @@ export const Chat = () => {
       const reply = await sendMessage(text);
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
     } catch (e) {
-      setError(e.message || 'Failed to get response');
+      // Display detailed error message from API client
+      const errorMsg = e.message || 'Failed to get response';
+      console.error('[Chat] Error sending message:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -183,17 +186,23 @@ export const Chat = () => {
           </div>
         </div>
 
-        {/* Error message */}
+        {/* Error message with enhanced details */}
         {error && (
           <div style={{ 
             color: theme.colors.error, 
-            fontSize: 14,
+            fontSize: 13,
             padding: '12px 16px',
             background: '#fee2e2',
             borderRadius: 8,
-            border: `1px solid ${theme.colors.error}`
+            border: `1px solid ${theme.colors.error}`,
+            lineHeight: 1.5,
+            wordBreak: 'break-word'
           }}>
-            ⚠️ {error}
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠️ Error</div>
+            <div>{error}</div>
+            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>
+              Check browser console for detailed diagnostics
+            </div>
           </div>
         )}
 
