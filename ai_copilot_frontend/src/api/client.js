@@ -1,24 +1,9 @@
 import axios from 'axios';
 
-// Dynamically resolve base URL from current host with port 3001
-// Priority: env variable > derive from window.location > localhost fallback
-const deriveBaseURL = () => {
-  if (process.env.REACT_APP_API_BASE_URL) {
-    return process.env.REACT_APP_API_BASE_URL;
-  }
-  
-  // Derive from current window location (supports both :3000 and :4000 frontends)
-  if (typeof window !== 'undefined' && window.location) {
-    const protocol = window.location.protocol; // https: or http:
-    const hostname = window.location.hostname; // vscode-internal-20620-beta.beta01.cloud.kavia.ai
-    return `${protocol}//${hostname}:3001`;
-  }
-  
-  // Fallback for local development
-  return 'http://localhost:3001';
-};
-
-const BASE_URL = deriveBaseURL();
+// Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
+const BASE_URL = process.env.REACT_APP_API_BASE_URL 
+  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
+  || 'http://localhost:3001';
 
 // Log the resolved base URL for diagnostics
 console.info('[API] Base URL:', BASE_URL);
