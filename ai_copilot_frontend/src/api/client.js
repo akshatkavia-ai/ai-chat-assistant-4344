@@ -1,38 +1,40 @@
 import axios from 'axios';
 
 /**
- * Resolve API base URL with dev-friendly autodetection:
- * 1. Use REACT_APP_API_BASE_URL if explicitly set
- * 2. Otherwise, derive from window.location.hostname and map port to 3001
- * 3. Fallback to localhost for local development
+ * Resolve API base URL with robust auto-detection:
+ * Priority order:
+ * 1. REACT_APP_API_BASE_URL environment variable (if explicitly set and non-empty)
+ * 2. Auto-detect from window.location: ${protocol}//${hostname}:3001
+ * 3. Fallback to http://localhost:3001 for local development
  */
 function resolveBaseURL() {
-  // Priority 1: Explicit environment variable
-  if (process.env.REACT_APP_API_BASE_URL) {
-    return process.env.REACT_APP_API_BASE_URL;
+  // Priority 1: Explicit environment variable (Create React App uses REACT_APP_ prefix)
+  const envBaseURL = process.env.REACT_APP_API_BASE_URL;
+  if (envBaseURL && envBaseURL.trim() !== '') {
+    console.info('[API] Using REACT_APP_API_BASE_URL from environment:', envBaseURL);
+    return envBaseURL.trim();
   }
   
-  // Priority 2: Dev autodetection from window.location
+  // Priority 2: Auto-detection from window.location
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     
-    // Check if running on preview domain
-    if (hostname.includes('beta01.cloud.kavia.ai')) {
-      const backendURL = `${protocol}//${hostname}:3001`;
-      console.info('[API] Autodetected backend URL from hostname:', backendURL);
-      return backendURL;
-    }
+    // Construct backend URL using same protocol/hostname but port 3001
+    const autoDetectedURL = `${protocol}//${hostname}:3001`;
+    console.info('[API] Auto-detected backend URL from current host:', autoDetectedURL);
+    return autoDetectedURL;
   }
   
-  // Priority 3: Localhost fallback
+  // Priority 3: Localhost fallback for non-browser contexts
+  console.info('[API] Using localhost fallback');
   return 'http://localhost:3001';
 }
 
 const BASE_URL = resolveBaseURL();
 
 // Log the resolved base URL for diagnostics
-console.info('[API] Base URL:', BASE_URL);
+console.info('[API] Final resolved base URL:', BASE_URL);
 
 /**
  * Axios instance configured for backend API communication
@@ -43,8 +45,28 @@ export const api = axios.create({
     'Content-Type': 'application/json' 
   },
   timeout: 30000, // 30 second timeout
-  withCredentials: true // Enable credentials for CORS
+  withCredentials: false // Set to false unless credentials are needed
 });
+
+/**
+ * PUBLIC_INTERFACE
+ * Check backend health status
+ * 
+ * @returns {Promise<object>} Health status object with { status, gemini_configured, model }
+ * @throws {Error} Enhanced error with isCors flag if CORS issue detected
+ */
+export async function checkHealth() {
+  try {
+    console.info('[API] Checking backend health at:', `${BASE_URL}/api/health`);
+    const { data } = await api.get('/api/health');
+    console.info('[API] Health check succeeded:', data);
+    return data;
+  } catch (error) {
+    const enrichedError = enrichError(error, '/api/health');
+    console.error('[API] Health check failed:', enrichedError.message);
+    throw enrichedError;
+  }
+}
 
 /**
  * PUBLIC_INTERFACE
@@ -52,49 +74,71 @@ export const api = axios.create({
  * 
  * @param {string} message - The user's message to send
  * @returns {Promise<string>} The AI assistant's reply
- * @throws {Error} If the request fails
+ * @throws {Error} Enhanced error with isCors flag if CORS issue detected
  */
 export async function sendMessage(message) {
   try {
+    console.info('[API] Sending message to:', `${BASE_URL}/api/chat`);
     const { data } = await api.post('/api/chat', { message });
+    console.info('[API] Received response');
     return data.reply;
   } catch (error) {
-    // Enhanced error handling with detailed diagnostics
-    if (error.response) {
-      // Server responded with error status
-      const status = error.response.status;
-      const url = error.config?.url || '/api/chat';
-      const detail = error.response.data?.detail || 'Server error';
-      console.error(`[API] Server error ${status} at ${BASE_URL}${url}:`, detail);
-      throw new Error(`Server error (${status}): ${detail}`);
-    } else if (error.request) {
-      // Request made but no response received (network/CORS issue)
-      const url = error.config?.url || '/api/chat';
-      console.error(`[API] Network error - no response from ${BASE_URL}${url}`);
-      console.error('[API] This could be a CORS issue, network problem, or backend not running');
-      console.error('[API] Check that backend ALLOWED_ORIGINS includes:', window.location.origin);
-      throw new Error(`Cannot connect to backend at ${BASE_URL}. Check network, CORS, or if server is running.`);
-    } else {
-      // Something else happened
-      console.error('[API] Unexpected error:', error.message);
-      throw new Error(`Unexpected error: ${error.message}`);
-    }
+    const enrichedError = enrichError(error, '/api/chat');
+    console.error('[API] Send message failed:', enrichedError.message);
+    throw enrichedError;
   }
 }
 
 /**
- * PUBLIC_INTERFACE
- * Check backend health status
+ * Enrich error with detailed diagnostics and CORS detection
  * 
- * @returns {Promise<object>} Health status object
+ * @param {Error} error - The original axios error
+ * @param {string} endpoint - The endpoint that was called
+ * @returns {Error} Enriched error with additional properties
  */
-export async function checkHealth() {
-  try {
-    const { data } = await api.get('/api/health');
-    console.info('[API] Health check succeeded:', data);
-    return data;
-  } catch (error) {
-    console.error('[API] Health check failed:', error.message);
-    throw error;
+function enrichError(error, endpoint) {
+  const enriched = new Error();
+  
+  if (error.response) {
+    // Server responded with error status (4xx, 5xx)
+    const status = error.response.status;
+    const detail = error.response.data?.detail || error.response.statusText || 'Server error';
+    enriched.message = `Server error (${status}): ${detail}`;
+    enriched.isCors = false;
+    enriched.status = status;
+    console.error(`[API] Server error ${status} at ${BASE_URL}${endpoint}:`, detail);
+  } else if (error.request) {
+    // Request made but no response received (network/CORS issue)
+    // This typically indicates CORS blocking or network failure
+    enriched.message = `Cannot connect to backend at ${BASE_URL}${endpoint}. This could be:\n` +
+      `• CORS issue: Backend may not allow requests from ${window.location.origin}\n` +
+      `• Network error: Backend may not be running or reachable\n` +
+      `• Firewall/proxy blocking the connection\n\n` +
+      `Detected base URL: ${BASE_URL}\n` +
+      `Check browser console Network tab for more details.`;
+    enriched.isCors = true; // Flag as potential CORS issue
+    enriched.baseURL = BASE_URL;
+    enriched.origin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+    console.error(`[API] Network error - no response from ${BASE_URL}${endpoint}`);
+    console.error('[API] Possible CORS issue. Backend ALLOWED_ORIGINS should include:', 
+      typeof window !== 'undefined' ? window.location.origin : 'current origin');
+    console.error('[API] Or backend may not be running. Try:', `curl ${BASE_URL}/api/health`);
+  } else {
+    // Something else happened during request setup
+    enriched.message = `Unexpected error: ${error.message}`;
+    enriched.isCors = false;
+    console.error('[API] Unexpected error:', error.message);
   }
+  
+  return enriched;
+}
+
+/**
+ * Get the current base URL being used
+ * Useful for debugging and status displays
+ * 
+ * @returns {string} Current API base URL
+ */
+export function getBaseURL() {
+  return BASE_URL;
 }
