@@ -1,27 +1,9 @@
 import axios from 'axios';
 
-// Resolve base URL with priority:
-// 1) REACT_APP_API_BASE_URL
-// 2) Derive from current window.location (same host/protocol, port 3001)
-// 3) Fallback to http://localhost:3001 (for non-browser contexts)
-function resolveBaseUrl() {
-  // Explicitly set via env at build time
-  if (process.env.REACT_APP_API_BASE_URL && process.env.REACT_APP_API_BASE_URL.trim()) {
-    return process.env.REACT_APP_API_BASE_URL.trim();
-  }
-
-  // If running in browser, derive from current location
-  if (typeof window !== 'undefined' && window.location) {
-    const { protocol, hostname } = window.location;
-    // Use 3001 for backend by convention; keep protocol (http/https) and host
-    return `${protocol}//${hostname}:3001`;
-  }
-
-  // Fallback for tests or SSR
-  return 'http://localhost:3001';
-}
-
-const BASE_URL = resolveBaseUrl();
+// Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
+const BASE_URL = process.env.REACT_APP_API_BASE_URL 
+  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
+  || 'http://localhost:3001';
 
 // Log the resolved base URL for diagnostics
 console.info('[API] Base URL:', BASE_URL);
@@ -31,11 +13,9 @@ console.info('[API] Base URL:', BASE_URL);
  */
 export const api = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
+  headers: { 
+    'Content-Type': 'application/json' 
   },
-  // Include credentials if your backend needs cookies; currently not required.
-  // withCredentials: true,
   timeout: 30000 // 30 second timeout
 });
 

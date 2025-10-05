@@ -13,13 +13,13 @@ Modern React-based frontend for the AI Copilot chat application with Ocean Profe
 
 ## Environment Variables
 
-Create a `.env` file in the frontend root directory (see `.env.example`):
+Create a `.env` file in the frontend root directory:
 
 ```env
 REACT_APP_API_BASE_URL=http://localhost:3001
 ```
 
-If not specified, the app will automatically derive the backend URL from the current browser location using the same protocol/host and port 3001 (e.g., https://<your-preview-host>:3001).
+This configures the backend API endpoint. The default is `http://localhost:3001` if not specified.
 
 ## Setup
 
