@@ -1,9 +1,35 @@
 import axios from 'axios';
 
-// Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
-const BASE_URL = process.env.REACT_APP_API_BASE_URL 
-  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
-  || 'http://localhost:3001';
+/**
+ * Resolve API base URL with dev-friendly autodetection:
+ * 1. Use REACT_APP_API_BASE_URL if explicitly set
+ * 2. Otherwise, derive from window.location.hostname and map port to 3001
+ * 3. Fallback to localhost for local development
+ */
+function resolveBaseURL() {
+  // Priority 1: Explicit environment variable
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
+  
+  // Priority 2: Dev autodetection from window.location
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // Check if running on preview domain
+    if (hostname.includes('beta01.cloud.kavia.ai')) {
+      const backendURL = `${protocol}//${hostname}:3001`;
+      console.info('[API] Autodetected backend URL from hostname:', backendURL);
+      return backendURL;
+    }
+  }
+  
+  // Priority 3: Localhost fallback
+  return 'http://localhost:3001';
+}
+
+const BASE_URL = resolveBaseURL();
 
 // Log the resolved base URL for diagnostics
 console.info('[API] Base URL:', BASE_URL);
@@ -16,7 +42,8 @@ export const api = axios.create({
   headers: { 
     'Content-Type': 'application/json' 
   },
-  timeout: 30000 // 30 second timeout
+  timeout: 30000, // 30 second timeout
+  withCredentials: true // Enable credentials for CORS
 });
 
 /**
@@ -44,6 +71,8 @@ export async function sendMessage(message) {
       // Request made but no response received (network/CORS issue)
       const url = error.config?.url || '/api/chat';
       console.error(`[API] Network error - no response from ${BASE_URL}${url}`);
+      console.error('[API] This could be a CORS issue, network problem, or backend not running');
+      console.error('[API] Check that backend ALLOWED_ORIGINS includes:', window.location.origin);
       throw new Error(`Cannot connect to backend at ${BASE_URL}. Check network, CORS, or if server is running.`);
     } else {
       // Something else happened
