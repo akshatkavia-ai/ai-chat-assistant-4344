@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Resolve base URL with priority: env variable > preview HTTPS URL > localhost fallback
 const BASE_URL = process.env.REACT_APP_API_BASE_URL 
-  || 'https://vscode-internal-23134-beta.beta01.cloud.kavia.ai:3001'
+  || 'https://vscode-internal-20837-beta.beta01.cloud.kavia.ai:3001'
   || 'http://localhost:3001';
 
 // Log the resolved base URL for diagnostics
