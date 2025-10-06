@@ -16,12 +16,15 @@ function resolveBaseURL() {
     return envBaseURL.trim();
   }
   
-  // Priority 2: Use specified preview backend URL if environment variable is not set
-  // This aligns with the requested explicit backend URL for the preview environment.
-  const previewBackend = 'https://vscode-internal-34116-beta.beta01.cloud.kavia.ai:3001';
-  if (previewBackend) {
-    console.info('[API] Using explicit preview backend URL:', previewBackend);
-    return previewBackend;
+  // Priority 2: Auto-detection from window.location (preferred for previews)
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+
+    // Construct backend URL using same protocol/hostname but port 3001
+    const autoDetectedURL = `${protocol}//${hostname}:3001`;
+    console.info('[API] Auto-detected backend URL from current host:', autoDetectedURL);
+    return autoDetectedURL;
   }
 
   // Priority 3: Auto-detection from window.location
