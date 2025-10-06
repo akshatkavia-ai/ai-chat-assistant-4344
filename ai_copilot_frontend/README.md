@@ -23,7 +23,7 @@ Modern React-based frontend for the AI Copilot chat application with Ocean Profe
 
 ## Environment Variables
 
-Create a `.env` file in the frontend root directory. The `REACT_APP_API_BASE_URL` variable is **optional** due to auto-detection:
+Create a `.env` file in the frontend root directory. The `REACT_APP_API_BASE_URL` variable can be set explicitly (recommended in preview) and is otherwise optional due to auto-detection:
 
 ```env
 # Optional - only set if you need to override auto-detection

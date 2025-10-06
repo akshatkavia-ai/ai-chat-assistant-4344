@@ -4,8 +4,9 @@ import axios from 'axios';
  * Resolve API base URL with robust auto-detection:
  * Priority order:
  * 1. REACT_APP_API_BASE_URL environment variable (if explicitly set and non-empty)
- * 2. Auto-detect from window.location: ${protocol}//${hostname}:3001
- * 3. Fallback to http://localhost:3001 for local development
+ * 2. Default to preview backend URL if known
+ * 3. Auto-detect from window.location: ${protocol}//${hostname}:3001
+ * 4. Fallback to http://localhost:3001 for local development
  */
 function resolveBaseURL() {
   // Priority 1: Explicit environment variable (Create React App uses REACT_APP_ prefix)
@@ -15,18 +16,26 @@ function resolveBaseURL() {
     return envBaseURL.trim();
   }
   
-  // Priority 2: Auto-detection from window.location
+  // Priority 2: Use specified preview backend URL if environment variable is not set
+  // This aligns with the requested explicit backend URL for the preview environment.
+  const previewBackend = 'https://vscode-internal-34116-beta.beta01.cloud.kavia.ai:3001';
+  if (previewBackend) {
+    console.info('[API] Using explicit preview backend URL:', previewBackend);
+    return previewBackend;
+  }
+
+  // Priority 3: Auto-detection from window.location
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
-    
+
     // Construct backend URL using same protocol/hostname but port 3001
     const autoDetectedURL = `${protocol}//${hostname}:3001`;
     console.info('[API] Auto-detected backend URL from current host:', autoDetectedURL);
     return autoDetectedURL;
   }
   
-  // Priority 3: Localhost fallback for non-browser contexts
+  // Priority 4: Localhost fallback for non-browser contexts
   console.info('[API] Using localhost fallback');
   return 'http://localhost:3001';
 }
